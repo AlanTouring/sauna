@@ -261,7 +261,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if is_hardware_raspberry():
+    if is_os_linux() and is_hardware_raspberry():
         model = get_raspberry_model()
         print("hardware is:= Raspberry Pi " + model)
 
