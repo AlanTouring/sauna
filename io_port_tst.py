@@ -1,17 +1,18 @@
 """This module contains unit tests."""
 import inspect
-import subprocess
 import unittest
 
 import pigpio
 
 import io_port
+import tools
 from testframe.test_util import do_nothing
 from testframe.test_util import get_empty_suites_list
 from testframe.test_util import run_unit_test_suites
 from testframe.test_util import unreachable_code
 from testframe.test_util import unreachable_code_2
-from tools import is_os_mac, is_os_linux, is_hardware_raspberry, get_raspberry_model
+from tools import determine_hardware_and_os_environment, is_pi_available, init_pi_check, close_pi_check, \
+    add_test_to_skip_list
 
 
 class IPPortTestCase(unittest.TestCase):
@@ -116,13 +117,16 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_pig_pio_test_0(self):
         """This is a test case to test the actual io interface."""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
 
         pi = pigpio.pi('pi222', show_errors=True)
         self.assertTrue(pi.connected)
 
         # User GPIO 2-4, 7-11, 14-15, 17-18, 22-25, 27-31.
         # for Pi Type 2 Model B Rev 2
-        # I split the port into a arbitratry number
+        # I split the port into a arbitrary number
         ports_w = [2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 17]
         ports_r = [18, 22, 23, 24, 25, 27, 28, 29, 30, 31]
 
@@ -150,6 +154,10 @@ class IPPortTestCase(unittest.TestCase):
         """This is a test case.
 
         default -> low -> high -> low"""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
+
         port = io_port.DigitalPort(2)
         self.assert_low(port)
         port.set_low()
@@ -167,6 +175,9 @@ class IPPortTestCase(unittest.TestCase):
         """This is a test case.
 
         high -> low/high -> low -> high/low"""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
         port = io_port.DigitalPort(4)
         port.set_high()
         self.assert_high(port)
@@ -183,12 +194,15 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_pig_pio_test_3(self):
         """This is a test case to test exceptions."""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
+
         port = io_port.DigitalPort(9, io_port.PORT_IS_READ_ONLY)
         self.assert_low(port)
         try:
             port.set_low()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
 
         except ValueError:
             do_nothing()
@@ -198,7 +212,6 @@ class IPPortTestCase(unittest.TestCase):
         try:
             port.set_high()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
         except ValueError:
             do_nothing()
 
@@ -206,6 +219,10 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_analog_gpio_test_1(self):
         """This is a test case for an analog senor using 1 wire protocol."""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
+
         my_pi = pigpio.pi('pi222', show_errors=True)
         port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, my_pi)
         port.upper_limit = 75
@@ -217,6 +234,9 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_analog_gpio_test_2(self):
         """This is a test case for an analog senor using 1 wire protocol."""
+        if not is_pi_available():
+            add_test_to_skip_list()
+            return
 
         my_pi = pigpio.pi('pi222', show_errors=True)
         port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, my_pi)
@@ -224,12 +244,6 @@ class IPPortTestCase(unittest.TestCase):
         sensor_data_file_path = "/home/pi/sauna/w1_slave/*.txt"
         values = port.get_values_2(sensor_data_file_path)
         print("temp values are:=" + str(values))
-
-        if is_os_mac():
-            print("mac")
-
-        if is_os_linux() and is_hardware_raspberry():
-            print ("Raspberry")
 
     def test_analog_gpio_test_3(self):
         pass
@@ -256,17 +270,15 @@ def create_test_suite() -> unittest.TestSuite:
 
 def main():
     """This is the main, which sets up and runs all tests of this module."""
+    init_pi_check()
+
     suites_list = get_empty_suites_list()
     suites_list.append(create_test_suite())
     run_unit_test_suites(suites_list)
 
+    close_pi_check()
+
 
 if __name__ == '__main__':
-    if is_os_linux() and is_hardware_raspberry():
-        model = get_raspberry_model()
-        print("hardware is:= Raspberry Pi " + model)
-
-    if is_os_mac():
-        print("os:= mac os.")
-
+    determine_hardware_and_os_environment()
     main()

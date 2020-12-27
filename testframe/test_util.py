@@ -18,7 +18,10 @@ def check_test_case_number(suite: unittest.suite) -> unittest.suite:
 
 def unreachable_code():
     """This is a test helper function."""
-    print_stderr("unreachable code was executed.", end="")
+    print_stderr("unreachable code was executed. Error in -->>", end="")
+    print_stderr(inspect.stack()[1].function, end="")
+    print_stderr("<<")
+    raise RuntimeError()
 
 
 def unreachable_code_2(f_name=""):
