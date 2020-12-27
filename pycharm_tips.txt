@@ -1,0 +1,22 @@
+# Press     esc             to end "find and replace window"
+# Press     ctrl R          to execute it or replace it with your code.
+# Press     alt cmd L       to reformat your code.
+# Press     shift shift     to search everywhere for classes, files,
+#                           tool windows, actions, and settings.
+# Press     shift tab       to un-indent code
+# Press     shift FN F6     to refactor / rename the identifier
+
+# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+# Code rules:
+# maximum 100 characters per line
+
+
+Sonderzeichen auf der Mac und der Raspi Tastatur
+    []  alt     5 / 6
+    |   alt     7   (pipe)
+    /   shift   7   (backslash)
+    {}  alt     8 / 9
+    ()  shift   8 / 9
+    @   alt     l
+    ~   alt     n
