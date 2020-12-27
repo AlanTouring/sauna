@@ -22,7 +22,7 @@ def is_os_windows():
 
 def is_hardware_raspberry():
     if is_os_linux():
-        out = subprocess.Popen(['cat /sys/firmware/devicetree/base/model'],
+        out = subprocess.Popen(['cat', '/sys/firmware/devicetree/base/model'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
 
@@ -36,7 +36,7 @@ def is_hardware_raspberry():
 
 def get_raspberry_model() -> int:
     if is_os_linux():
-        out = subprocess.Popen(['cat /sys/firmware/devicetree/base/model'],
+        out = subprocess.Popen(['cat', '/sys/firmware/devicetree/base/model'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
 

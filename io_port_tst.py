@@ -14,21 +14,6 @@ from testframe.test_util import unreachable_code_2
 from tools import is_os_mac, is_os_linux, is_hardware_raspberry, get_raspberry_model
 
 
-def is_hardware_raspberry_2():
-    #"Das ist ein Test"
-    if is_os_linux():
-        out = subprocess.Popen(['cat', '/sys/firmware/devicetree/base/model'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-
-        stdout, stderr = out.communicate()
-        data_str = stdout.decode("utf-8")
-        if "Raspberry" not in data_str:
-            return False
-
-        return True
-
-
 class IPPortTestCase(unittest.TestCase):
     """This class contains test cases for:
 
@@ -277,7 +262,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if is_os_linux() and is_hardware_raspberry_2():
+    if is_os_linux() and is_hardware_raspberry():
         model = get_raspberry_model()
         print("hardware is:= Raspberry Pi " + model)
 
