@@ -15,6 +15,7 @@ from tools import is_os_mac, is_os_linux, is_hardware_raspberry, get_raspberry_m
 
 
 def is_hardware_raspberry_2():
+    #"Das ist ein Test"
     if is_os_linux():
         out = subprocess.Popen(['cat', '/sys/firmware/devicetree/base/model'],
                                stdout=subprocess.PIPE,
