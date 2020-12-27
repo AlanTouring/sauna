@@ -10,6 +10,7 @@ from testframe.test_util import get_empty_suites_list
 from testframe.test_util import run_unit_test_suites
 from testframe.test_util import unreachable_code
 from testframe.test_util import unreachable_code_2
+from tools import is_os_mac, is_os_linux, is_hardware_raspberry, get_raspberry_model
 
 
 class IPPortTestCase(unittest.TestCase):
@@ -223,9 +224,15 @@ class IPPortTestCase(unittest.TestCase):
         values = port.get_values_2(sensor_data_file_path)
         print("temp values are:=" + str(values))
 
+        if is_os_mac():
+            print("mac")
+
+        if is_os_linux() and is_hardware_raspberry():
+            print ("Raspberry")
 
     def test_analog_gpio_test_3(self):
         pass
+
 
 def create_test_suite() -> unittest.TestSuite:
     """This is a convenience function to collect all tests of this module."""
@@ -254,4 +261,11 @@ def main():
 
 
 if __name__ == '__main__':
+    if is_hardware_raspberry():
+        model = get_raspberry_model()
+        print("hardware is:= Raspberry Pi " + model)
+
+    if is_os_mac():
+        print("os:= mac os.")
+
     main()
