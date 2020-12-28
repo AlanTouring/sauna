@@ -237,7 +237,7 @@ def remove_job_timer(update: Update, context: CallbackContext) -> None:
 
 
 def main():
-    """Start the sauna bot."""
+    """Start the sauna bot. """
     # Create the Updater and pass it the token of your bot.
     updater = Updater("1276131699:AAHhrtxf6vv-bmFMCnwv2AsjYCn-Ji6zJMs",
                       use_context=True)
