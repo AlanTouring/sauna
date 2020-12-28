@@ -31,6 +31,18 @@ class IO_Controller:
         self.pies[pi_name] = pi
         assert pi.connected
 
+    def getUpperLimit(self, port_name) -> int:
+        port = self.ports[port_name]
+        if not isinstance(port, AnalogPort):
+            raise ValueError
+        return port.upper_limit
+
+    def increaseLimit(self, port_name):
+        port = self.ports[port_name]
+        if not isinstance(port, AnalogPort):
+            raise ValueError
+        port.increase()
+
     def getPortValue(self, port_name) -> int:
         port = self.ports[port_name]
         if not (isinstance(port, DigitalPort) or isinstance(port, AnalogPort)):
@@ -45,7 +57,8 @@ class IO_Controller:
         elif port.port_type == io_port.PORT_IS_ANALOG_READ_ONLY:
             assert isinstance(port, AnalogPort)
             value = port.get_value()
-            return str(value)
+            # TODO alter code:= return str(value)
+            return value
         else:
             raise ValueError
 

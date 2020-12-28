@@ -12,7 +12,7 @@ PORT_IS_WRITEABLE: int = 1
 PORT_IS_ANALOG_READ_ONLY: int = 3
 PORT_STATE_LOW: int = 0
 PORT_STATE_HIGH: int = 1
-
+PATH_TO_ONE_WIRE_READINGS = "/home/pi/sauna/w1_slave/*.txt"
 
 # pylint: disable=W0511 # many todos in code and that is ok
 # TODO finish implementation
@@ -34,13 +34,14 @@ class AnalogPort():
     upper_limit: int
 
     def __init__(self, address: int, port_type=PORT_IS_ANALOG_READ_ONLY,
-                 callback=do_nothing, pi_para=None):
+                 callback=do_nothing, pi_para=None, path_to_1wire=PATH_TO_ONE_WIRE_READINGS):
         self.callback = callback
         self.error_text = "Measured value is not plausible."
         self.upper_limit = 80
         self.lower_limit = 75
         self.__ADDRESS = address
         self.port_type = port_type
+        self.path_to_1wire = path_to_1wire
         if pi_para is None:
             self.pi = pigpio.pi('pi222', show_errors=True)
         else:
@@ -75,7 +76,7 @@ class AnalogPort():
         return self.upper_limit < average
 
     def get_value(self) -> float:
-        temps = self.get_values()
+        temps = self.get_values_3()
         if not self.is_value_plausible(temps):
             return 75
 
@@ -100,6 +101,7 @@ class AnalogPort():
         Get list of connected sensors, handle error rather than the
         default of raising exception if none found.
         """
+        # TODO this function probably can be deleted
         pigpio.exceptions = False
         number, files = self.pi.file_list("/sys/bus/w1/devices/28-00*/w1_slave")
         pigpio.exceptions = True
@@ -108,6 +110,9 @@ class AnalogPort():
         self.scan_one_wire_files(files, number, temperatures)
 
         return temperatures
+
+    def get_values_3(self) -> List[float]:
+        return self.get_values_2(self.path_to_1wire)
 
     def get_values_2(self, path_to_one_wire_files) -> List[float]:
         temperatures: List[float] = []
@@ -131,7 +136,6 @@ class AnalogPort():
                 number, data = self.pi.file_read(handle, 1000)  # 1000 is plenty to read full file.
                 if handle >= 0:
                     self.pi.file_close(handle)
-
                 """
                 Typical file contents
                 73 01 4b 46 7f ff 0d 10 41 : crc=41 YES
@@ -141,10 +145,7 @@ class AnalogPort():
                 if "YES" in data_str:
                     (discard, separator, temperature_str) = data_str.partition(' t=')
                     temperature = float(temperature_str) / 1000.0
-                    print("{} {:.1f}".format(device_id, temperature))
                     temperatures.append(temperature)
-                else:
-                    print("999.9")
 
     def cancel_callback(self):
         self.callback = do_nothing
@@ -156,10 +157,6 @@ class AnalogPort():
         else:
             self.upper_limit = 65
             self.lower_limit = 60
-
-    def need_heating(self) -> bool:
-        return self.lower_limit > self.get_value() and \
-               self.upper_limit > self.get_value
 
     def set_default_temp(self):
         self.upper_limit = 75

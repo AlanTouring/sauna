@@ -19,6 +19,7 @@ class SaunaTestCase(unittest.TestCase):
         self.assertEqual("0", self.sauna.get_sensor_value("Light Sensor"))
         self.assertEqual("0", self.sauna.get_sensor_value("Oven Sensor"))
         self.assertEqual("0", self.sauna.get_sensor_value("Temperature Sensor"))
+        self.assertEqual("24.742", self.sauna.get_sensor_value("Temperature Sensor 2"))
 
         self.assertEqual("0", self.sauna.get_sensor_value("Power Switch"))
         self.assertEqual("0", self.sauna.get_sensor_value("Light Switch"))
@@ -32,38 +33,26 @@ class SaunaTestCase(unittest.TestCase):
         self.assertEqual("1", self.sauna.get_sensor_value("Oven Switch"))
 
     def test_sauna_sequence_1(self):
-        """This is a test of a nominal sauna sequence."""
-        # main power
-        self.assertFalse(self.sauna.main_power_status.is_high(), msg="main power is off. Should be on.")
-        # Trick the class to create the test by modifying temporarily a __private attribute
-        # In reality the main switch in the sauna must be pressed manually to main power = on
-        self.sauna.main_power_status.state = io_port.PORT_STATE_HIGH
-        self.assertTrue(self.sauna.main_power_status.state == io_port.PORT_STATE_HIGH)
-        self.assertTrue(self.sauna.main_power_status.is_high())
-
-        # remoter controlled 2nd power switch
-        self.assertFalse(self.sauna.power.is_high(), msg="remote controlled power switch = off")
-        self.sauna.power.set_high()
-        self.assertTrue(self.sauna.power.is_high())
-
-        # switch for actually putting electrical power to the heating coil
-        self.assertFalse(self.sauna.heat.is_high(), msg="at beginning this should be of.")
-        self.sauna.heat.set_high()
-        self.assertTrue(self.sauna.heat.is_high())
-
-        self.assertFalse(self.sauna.light.is_high(), msg="at beginning this should be of.")
-        self.sauna.light.set_high()
-        self.assertTrue(self.sauna.light.is_high())
-
-    def test_sauna_sequence_2(self):
-        # TODO not all sauna related functions are tested. need more tests.
-        pass
-
-    def test_get_temp(self):
-        """This is a test of a getter function."""
-        self.assertEqual(self.sauna.get_temp_val(), 0, msg='incorrect getter')
-        self.sauna.set_temp(5)
-        self.assertEqual(self.sauna.get_temp_val(), 5, msg='incorrect getter')
+        """This is a test of a nominal sauna sequence. Without HW Feedback"""
+        self.assertEqual("0", self.sauna.get_sensor_value("Mains Sensor"))
+        # Power
+        self.assertEqual("0", self.sauna.get_sensor_value("Power Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Power Switch"))
+        self.sauna.control.togglePortValue("Power Switch")
+        self.assertEqual("0", self.sauna.get_sensor_value("Power Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Power Switch"))
+        # Light
+        self.assertEqual("0", self.sauna.get_sensor_value("Light Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Light Switch"))
+        self.sauna.control.togglePortValue("Light Switch")
+        self.assertEqual("0", self.sauna.get_sensor_value("Light Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Light Switch"))
+        # Oven
+        self.assertEqual("0", self.sauna.get_sensor_value("Oven Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Oven Switch"))
+        self.sauna.control.togglePortValue("Oven Switch")
+        self.assertEqual("0", self.sauna.get_sensor_value("Oven Sensor"))
+        self.assertEqual("0", self.sauna.get_sensor_value("Oven Switch"))
 
     def test_login(self):
         """This is a test of the login process.
@@ -83,11 +72,9 @@ class SaunaTestCase(unittest.TestCase):
 def create_test_suite() -> unittest.TestSuite:
     """This is a convenience function to collect all tests of this module."""
     suite = unittest.TestSuite()
-    #suite.addTest(SaunaTestCase('test_get_temp'))
-    suite.addTest(SaunaTestCase('test_login'))
-    #suite.addTest(SaunaTestCase('test_sauna_sequence_1'))
-    #suite.addTest(SaunaTestCase('test_sauna_sequence_2'))
     suite.addTest(SaunaTestCase('test_sauna_1'))
+    suite.addTest(SaunaTestCase('test_login'))
+    suite.addTest(SaunaTestCase('test_sauna_sequence_1'))
     # TODO add test cases here
     return suite
 

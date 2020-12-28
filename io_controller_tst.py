@@ -105,7 +105,7 @@ class IOControllerTestCase(unittest.TestCase):
         pi_name = 'pi222'
 
         control.createPort(4, port_type, "3", pi_name)
-        self.assertEqual(control.getPortValue("3"), "75")
+        self.assertAlmostEqual(control.getPortValue("3"), 24.742, places=3)
 
     def tearDown(self):
         pass
@@ -119,7 +119,8 @@ def create_test_suite() -> unittest.TestSuite:
     suite.addTest(IOControllerTestCase('test_create_port_2'))
     suite.addTest(IOControllerTestCase('test_create_port_3'))
     suite.addTest(IOControllerTestCase('test_create_port_4'))
-    # TODO
+    # TODO more tests for Analog Ports
+    # TODO are callbacks required
     return suite
 
 

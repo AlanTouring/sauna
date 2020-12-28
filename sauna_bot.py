@@ -34,13 +34,6 @@ __sauna: Sauna = Sauna()
 These usually take the two arguments update and context.
 Error handlers also receive the raised TelegramError object in error."""
 
-def toggle_heat(port_num, port_status, tick):
-    if __sauna.heat_status.set_high():
-        __sauna.heat.set_low()
-    elif __sauna.heat_status.is_low():
-        __sauna.heat.set_high()
-    print("callback")
-
 
 def login(update: Update, context: CallbackContext) -> None:
     """Perform password check when the command /login is issued."""
@@ -56,59 +49,81 @@ def login(update: Update, context: CallbackContext) -> None:
 
 def temp(update: Update, context: CallbackContext) -> None:
     """Send temp of sauna when the command /temp is issued."""
-    update.message.reply_text(__sauna.get_temp())
+    txt = str(__sauna.control.getPortValue("Temperature Sensor 2"))
+    update.message.reply_text(txt)
 
 
-def not_implemented(update: Update, context: CallbackContext) -> None:
-    """dummy handler for not yet implemented functions."""
-    update.message.reply_text('not implemented (yet) :)')
+def lighton(update: Update, context: CallbackContext) -> None:
+    """Switch light on when the command /lighton is issued."""
+    if __sauna.control.getPortValue("Light Sensor") == 0:
+        __sauna.control.togglePortValue("Light Switch")
+        update.message.reply_text("Light is on")
+    else:
+        update.message.reply_text("Light was already on")
+
+
+def lightoff(update: Update, context: CallbackContext) -> None:
+    """Switch light off when the command /lighton is issued."""
+    if __sauna.control.getPortValue("Light Sensor") == 1:
+        __sauna.control.togglePortValue("Light Switch")
+        update.message.reply_text("Light is off")
+    else:
+        update.message.reply_text("Light was already off")
+
+
+def heatmore(update: Update, context: CallbackContext) -> None:
+    """increase the heat when the command /heatmore is issued."""
+    __sauna.control.increaseLimit("Temperature Sensor 2")
+
+    str_list = []
+    temp_str = str(__sauna.control.getPortValue("Temperature Sensor 2"))
+    str_list.append('Sauna temp is currently ' + temp_str + ' C.\n')
+
+    temp_str = str(__sauna.control.getUpperLimit("Temperature Sensor 2"))
+    str_list.append('Sauna temp is going to ' + temp_str + ' C.\n')
+    update.message.reply_text(''.join(str_list))
 
 
 def heat(update: Update, context: CallbackContext) -> None:
     """Start heating of sauna when the command /heat is issued."""
     if __login.is_user_logged_in():
-        if __sauna.main_power_status.is_high():
-            if __sauna.temperature_status.need_heating():
-                __sauna.power.set_high()
-                __sauna.heat.set_high()
-                __sauna.temperature_status.set_default_temp()
-                update.message.reply_text('Starting to heat.')
+        if __sauna.control.getPortValue("Mains Sensor") == 1:
+
+            if __sauna.control.getPortValue("Power Sensor") == 0:
+                __sauna.control.togglePortValue("Power Switch")
+
+            if __sauna.control.getPortValue("Light Sensor") == 0:
+                __sauna.control.togglePortValue("Light Switch")
+
+            if __sauna.control.is_below_lower_limit("Temperature Sensor 2"):
+                if __sauna.control.getPortValue("Oven Sensor") == 0:
+                    __sauna.control.togglePortValue("Oven Switch")
+                    update.message.reply_text('Starting to heat.')
         else:
             update.message.reply_text('Main power is switched off. Needs to be set manually.')
-
-    else:
-        update.message.reply_text("You are not logged in. Log in!!")
-
-
-def simulated_heat(update: Update, context: CallbackContext) -> None:
-    """Start heating of sauna when the command /heat is issued."""
-    if __login.is_user_logged_in():
-        __sauna.main_power_status.port_type = io_port.PORT_IS_WRITEABLE
-        __sauna.main_power_status.state = io_port.PORT_STATE_HIGH
-        # fixme
-        if __sauna.main_power_status.is_high():
-            __sauna.power.set_high()
-            __sauna.heat.set_high()
-            update.message.reply_text('Starting to heat.')
-        else:
-            update.message.reply_text('Main power switch is off. Needs to be set manually.')
-
     else:
         update.message.reply_text("You are not logged in. Log in!!")
 
 
 def off(update: Update, context: CallbackContext) -> None:
     """Switch sauna of when the command /off is issued."""
-    __sauna.heat.set_low()
-    __sauna.light.set_low()
-    __sauna.power.set_low()
+    if __sauna.control.getPortValue("Light Sensor") == 1:
+        __sauna.control.togglePortValue("Light Switch")
+
+    if __sauna.control.getPortValue("Oven Sensor") == 1:
+        __sauna.control.togglePortValue("Oven Switch")
+
+    if __sauna.control.getPortValue("Power Sensor") == 1:
+        __sauna.control.togglePortValue("Power Switch")
+
     __login.logout_user()
+
     str_list = []
     str_list.append('Sauna power is switched OFF.\n')
     str_list.append('Sauna oven is switched OFF.\n')
     str_list.append('Sauna light is switched OFF.\n')
-    str_list.append('ou are logged OUT.\n')
-    temperature = __sauna.temperature_status.get_value()
+    str_list.append('You are logged OUT.\n')
+    temperature = __sauna.control.getPortValue("Temperature Sensor 2")
     str_list.append("Temp is " + str(temperature) + " C.\n")
     update.message.reply_text(''.join(str_list))
 
@@ -116,50 +131,44 @@ def off(update: Update, context: CallbackContext) -> None:
 def status(update: Update, context: CallbackContext) -> None:
     """Send status of sauna when the command /status is issued."""
     str_list = ['Sauna main power is ']
-    if __sauna.main_power_status.is_high():
+    if __sauna.control.getPortValue("Mains Sensor") == 1:
         str_list.append('on.')
     else:
         str_list.append('OFF.')
     str_list.append('\n')
 
     str_list.append('Sauna power switch is ')
-    if __sauna.power_status.is_high():
+    if __sauna.control.getPortValue("Power Sensor") == 1:
         str_list.append('on.')
     else:
         str_list.append('OFF.')
     str_list.append('\n')
 
     str_list.append('Sauna oven is currently ')
-    if __sauna.heat_status.is_high():
+    if __sauna.control.getPortValue("Oven Sensor") == 1:
         str_list.append('HEATING.')
     else:
         str_list.append('OFF.')
     str_list.append('\n')
 
     str_list.append('Sauna light is ')
-    if __sauna.light_status.is_high():
+    if __sauna.control.getPortValue("Light Sensor") == 1:
         str_list.append('on.')
     else:
         str_list.append('OFF.')
     str_list.append('\n')
 
-    temp_str = str(__sauna.temperature_status.get_value())
+    temp_str = str(__sauna.control.getPortValue("Temperature Sensor 2"))
     str_list.append('Sauna temp is currently ' + temp_str + ' C.\n')
 
-    temp_str = str(__sauna.temperature_status.upper_limit)
+    temp_str = str(__sauna.control.getUpperLimit("Temperature Sensor 2"))
     str_list.append('Sauna temp is going to ' + temp_str + ' C.\n')
-
-    temp_str = "42"
-    str_list.append('Sauna running since ' + temp_str + ' min.\n')
-    # TODO implement uptime timer function
-
     update.message.reply_text(''.join(str_list))
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
     commands = ["/login <pwd>\n",
-                "/logout\n",
                 "/status\n",
                 "/heat\n",
                 "/temp\n",
@@ -167,9 +176,9 @@ def help_command(update: Update, context: CallbackContext) -> None:
                 "/help\n",
                 "/set\n",
                 "/unset\n",
+                "/heatmore\n",
                 "/lighton\n",
-                "/lightoff\n",
-                "/uptime\n"]
+                "/lightoff\n"]
 
     cmd: str = " ".join(commands)
     update.message.reply_text('commands are:\n' + cmd)
@@ -183,7 +192,8 @@ def echo(update: Update, context: CallbackContext) -> None:
 def send_temp(context):
     """Send the sauna temp."""
     job = context.job
-    context.bot.send_message(job.context, text="Sauna temp is " + __sauna.get_temp())
+    text = str(__sauna.control.getPortValue("Temperature Sensor 2"))
+    context.bot.send_message(job.context, text="Sauna temp is " + text + " Grad")
 
 
 def remove_job_if_exists(name, context):
@@ -234,15 +244,14 @@ def main():
 
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler("login", login))
-    dispatcher.add_handler(CommandHandler("logout", not_implemented))
-    dispatcher.add_handler(CommandHandler("lighton", not_implemented))
-    dispatcher.add_handler(CommandHandler("lightoff", not_implemented))
-    dispatcher.add_handler(CommandHandler("uptime", not_implemented))
+    dispatcher.add_handler(CommandHandler("lighton", lighton))
+    dispatcher.add_handler(CommandHandler("lightoff", lightoff))
     # get current temperature
     dispatcher.add_handler(CommandHandler("temp", temp))
     # switch on oven
     dispatcher.add_handler(CommandHandler("heat", heat))
-    dispatcher.add_handler(CommandHandler("sheat", simulated_heat))
+    # increase heat by until it flips to the lower limit again
+    dispatcher.add_handler(CommandHandler("heatmore", heatmore))
     # switch everything off
     dispatcher.add_handler(CommandHandler("off", off))
     # get status
