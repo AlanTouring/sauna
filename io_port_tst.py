@@ -1,5 +1,6 @@
 """This module contains unit tests."""
 import inspect
+import time
 import unittest
 
 import pigpio
@@ -231,7 +232,6 @@ class IPPortTestCase(unittest.TestCase):
         port.lower_limit = 70
         self.assertGreater(port.get_value(), -20)
         self.assertLess(port.get_value(), 100)
-        #self.assertFalse(port.need_heating())
 
     def test_analog_gpio_test_2(self):
         """This is a test case for an analog senor using 1 wire protocol."""
@@ -283,6 +283,63 @@ def main():
     close_pi_gpio_d_check()
 
 
+def port_example():
+    pi = pigpio.pi('pi224', show_errors=True)
+    assert pi.connected
+
+    ports_id_1 = [2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 17]
+    ports_id_2 = [18, 22, 23, 24, 25, 27, 28, 29, 30, 31]
+    ports_all = ports_id_1 + ports_id_2
+
+    dps = []
+    led_ports = [18, 23, 24, 25]
+    for port_num in led_ports:
+        port = io_port.DigitalPort(port_num, pi_para=pi)
+        dps.append(port)
+
+    print("\nBlinking")
+    for i in range(0, 3):
+        for dp in dps:
+            dp.set_high()
+
+        time.sleep(0.5)
+
+        for dp in dps:
+            dp.set_low()
+
+        time.sleep(0.5)
+
+        for dp in dps:
+            dp.toggle()
+
+        time.sleep(0.5)
+
+    path = "/sys/bus/w1/devices/28-00*/w1_slave"
+    one_wire = io_port.AnalogPort(2, port_type=io_port.PORT_IS_READ_ONLY,
+                             path_to_1wire=path,pi_para=pi)
+    print("\nTemp Reading")
+    for i in range(0, 10):
+        temp = one_wire.get_value()
+        print(str(temp) + " ", end="")
+        time.sleep(0.2)
+
+    button = io_port.DigitalPort(27, port_type=io_port.PORT_IS_READ_ONLY, pi_para=pi)
+    print("\nWaiting for button press.")
+    try:
+        for i in range(0, 10):
+            if button.is_low():
+                print("Button Low ", end="")
+            if button.is_high():
+                print("Button is high", end="")
+
+            time.sleep(0.2)
+
+    except KeyboardInterrupt:
+        print("\nTidying up")
+
+
 if __name__ == '__main__':
     determine_hardware_and_os_environment()
-    main()
+    #main()
+
+    port_example()
