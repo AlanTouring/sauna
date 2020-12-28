@@ -95,10 +95,12 @@ class IO_Controller:
 
         pi = self.__getPI(pi_name)
         if pt == io_port.PORT_IS_READ_ONLY or pt == io_port.PORT_IS_WRITEABLE:
-            port = DigitalPort(port_num, port_type=pt, pi_para=pi)
+            port = DigitalPort(port_num, port_type=pt, pi_obj=pi)
             self.addPort(port, port_name)
         elif pt == io_port.PORT_IS_ANALOG_READ_ONLY:
-            port = AnalogPort(port_num, port_type=pt, pi_para=pi)
+            port = AnalogPort(port_num, port_type=pt, pi_obj=pi,
+                              path_to_1wire="/sys/bus/w1/devices/28-0*/w1_slave")
+            #TODO make it nicer
             self.addPort(port, port_name)
             pass
         else:

@@ -17,12 +17,13 @@ PATH_TO_ONE_WIRE_READINGS = "/home/pi/sauna/w1_slave/*.txt"
 # pylint: disable=W0511 # many todos in code and that is ok
 # TODO finish implementation
 
+
 def print_GPIO_Status(port_num, port_status, tick):
     print("Port={} Status in now={}".format(port_num, port_status))
 
 
 def do_nothing(port_num, port_status, tick):
-    print("callback")
+    pass
 
 
 class Port:
@@ -34,7 +35,7 @@ class AnalogPort():
     upper_limit: int
 
     def __init__(self, address: int, port_type=PORT_IS_ANALOG_READ_ONLY,
-                 callback=do_nothing, pi_para=None, path_to_1wire=PATH_TO_ONE_WIRE_READINGS):
+                 callback=do_nothing, pi_obj=None, path_to_1wire=PATH_TO_ONE_WIRE_READINGS):
         self.callback = callback
         self.error_text = "Measured value is not plausible."
         self.upper_limit = 80
@@ -42,10 +43,10 @@ class AnalogPort():
         self.__ADDRESS = address
         self.port_type = port_type
         self.path_to_1wire = path_to_1wire
-        if pi_para is None:
+        if pi_obj is None:
             self.pi = pigpio.pi('pi222', show_errors=True)
         else:
-            self.pi = pi_para
+            self.pi = pi_obj
         assert self.pi.connected
 
     @staticmethod
@@ -169,7 +170,7 @@ class DigitalPort:
     pi: pigpio.pi
 
     def __init__(self, address: int, port_type=PORT_IS_WRITEABLE,
-                 callback=do_nothing, pi_para=None):
+                 callback=do_nothing, pi_obj=None):
         # pylint: disable=C0103 # The following identifiers are written as private constants
         self.__ADDRESS = address
         self.port_type = port_type
@@ -177,19 +178,19 @@ class DigitalPort:
         # pylint: enable=C0103
         self.state = PORT_STATE_LOW
         if self.__ADDRESS < 1000:
-            if pi_para is None:
+            if pi_obj is None:
                 self.pi = pigpio.pi('pi222', show_errors=True)
             else:
-                self.pi = pi_para
+                self.pi = pi_obj
 
             assert self.pi.connected
 
-            if PORT_IS_WRITEABLE:
+            if self.port_type == PORT_IS_WRITEABLE:
                 self.pi.set_mode(self.__ADDRESS, pigpio.OUTPUT)
                 self.pi.write(self.__ADDRESS, 0)
             else:
                 self.pi.set_mode(self.__ADDRESS, pigpio.INPUT)
-                set.pi.set_glitch_filter(self.__ADDRESS, 50000)
+                self.pi.set_glitch_filter(self.__ADDRESS, 50000)
                 self.callback = self.pi.callback(self.__ADDRESS,
                                                  pigpio.EITHER_EDGE,
                                                  callback)
@@ -242,12 +243,12 @@ class DigitalPort:
 
         if self.is_high():
             self.set_low()
-            time.sleep(0.1)
+            time.sleep(0.4)
             self.set_high()
             self.state = PORT_STATE_HIGH
 
         else:
             self.set_high()
-            time.sleep(0.1)
+            time.sleep(0.4)
             self.set_low()
             self.state = PORT_STATE_LOW

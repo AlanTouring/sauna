@@ -18,10 +18,8 @@ def execute_main():
     suites_list.append(check_test_case_number(circle_tst.create_test_suite()))
     suites_list.append(check_test_case_number(example_tst.create_test_suite()))
     suites_list.append(check_test_case_number(io_port_tst.create_test_suite()))
-    #suites_list.append(check_test_case_number(sauna_tst.create_test_suite()))
-    #TODO wahrscheinlich kann man nur zu eimal zu einem pi connecten
-    # fixme implementierung ändern
     suites_list.append(check_test_case_number(io_controller_tst.create_test_suite()))
+    suites_list.append(check_test_case_number(sauna_tst.create_test_suite()))
 
     run_unit_test_suites(suites_list)
 

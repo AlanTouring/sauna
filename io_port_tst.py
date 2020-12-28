@@ -1,18 +1,15 @@
 """This module contains unit tests."""
-import inspect
-import time
 import unittest
-
 import pigpio
-
 import io_port
-import tools
+import pi_util
 from testframe.test_util import do_nothing
 from testframe.test_util import get_empty_suites_list
 from testframe.test_util import run_unit_test_suites
 from testframe.test_util import unreachable_code
-from testframe.test_util import unreachable_code_2
-from tools import determine_hardware_and_os_environment, is_pi_gpio_d_available, init_pi_gpio_d, close_pi_gpio_d_check, \
+from tools import determine_hardware_and_os_environment, \
+    is_pi_gpio_d_available, \
+    init_pi_gpio_d, close_pi_gpio_d_check, \
     add_test_to_skip_list
 
 
@@ -33,6 +30,7 @@ class IPPortTestCase(unittest.TestCase):
         """This is a test case.
 
         default -> low -> high -> low"""
+        # high port numbers do not use real pi
         port = io_port.DigitalPort(1017)
         self.assert_low(port)
         port.set_low()
@@ -46,6 +44,7 @@ class IPPortTestCase(unittest.TestCase):
         """This is a test case.
 
         high -> low/high -> low -> high/low"""
+        # high port numbers do not use real pi
         port = io_port.DigitalPort(1017)
         port.set_high()
         self.assert_high(port)
@@ -58,12 +57,12 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_digital_port_test_3(self):
         """This is a test case to test exceptions."""
+        # high port numbers do not use real pi
         port = io_port.DigitalPort(1017, io_port.PORT_IS_READ_ONLY)
         self.assert_low(port)
         try:
             port.set_low()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
 
         except ValueError:
             do_nothing()
@@ -73,7 +72,6 @@ class IPPortTestCase(unittest.TestCase):
         try:
             port.set_high()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
         except ValueError:
             do_nothing()
 
@@ -85,7 +83,6 @@ class IPPortTestCase(unittest.TestCase):
         try:
             port.set_low()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
         except ValueError:
             do_nothing()
 
@@ -93,16 +90,17 @@ class IPPortTestCase(unittest.TestCase):
 
     def test_digital_port_test_4(self):
         """This is a test case to test exceptions."""
+        # high port numbers do not use real pi
         port = io_port.DigitalPort(1017, io_port.PORT_IS_READ_ONLY)
         try:
             port.toggle()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
         except ValueError:
             do_nothing()
 
     def test_digital_port_test_5(self):
         """This is a test case to test exceptions."""
+        # high port numbers do not use real pi
         port = io_port.DigitalPort(1017, io_port.PORT_IS_READ_ONLY)
 
         try:
@@ -112,7 +110,6 @@ class IPPortTestCase(unittest.TestCase):
 
             port.toggle()
             unreachable_code()
-            unreachable_code_2(str(inspect.stack()[0].function))
         except ValueError:
             do_nothing()
 
@@ -122,19 +119,16 @@ class IPPortTestCase(unittest.TestCase):
             add_test_to_skip_list()
             return
 
-        pi = pigpio.pi('pi222', show_errors=True)
+        pi = pigpio.pi(test_pi_address[0], show_errors=True)
         self.assertTrue(pi.connected)
 
-        # User GPIO 2-4, 7-11, 14-15, 17-18, 22-25, 27-31.
-        # for Pi Type 2 Model B Rev 2
-        # I split the port into a arbitrary number
-        ports_w = [2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 17]
-        ports_r = [18, 22, 23, 24, 25, 27, 28, 29, 30, 31]
+        # see pi_util for different pin outs on different raspberry
+        ports = pi_util.pi1_single_use_ports
 
-        for port in ports_w:
+        for port in ports:
             pi.set_mode(port, pigpio.OUTPUT)
 
-        for port in ports_w:
+        for port in ports:
             if pi.get_mode(gpio=port) == pigpio.OUTPUT:
                 pi.write(port, 0)
                 self.assertEqual(0, pi.read(port))
@@ -143,10 +137,10 @@ class IPPortTestCase(unittest.TestCase):
                 pi.write(port, 0)
                 self.assertEqual(0, pi.read(port))
 
-        for port in ports_r:
+        for port in ports:
             pi.set_mode(port, pigpio.INPUT)
 
-        for port in ports_r:
+        for port in ports:
             if pi.get_mode(gpio=port) == pigpio.INPUT:
                 result = pi.read(port)
                 # to test read value of a readonly port you new a hw trigger
@@ -161,7 +155,7 @@ class IPPortTestCase(unittest.TestCase):
             add_test_to_skip_list()
             return
 
-        port = io_port.DigitalPort(2)
+        port = io_port.DigitalPort(2, pi_obj=test_pi[0])
         self.assert_low(port)
         port.set_low()
         self.assert_low(port)
@@ -169,7 +163,7 @@ class IPPortTestCase(unittest.TestCase):
         self.assert_high(port)
         port.set_low()
         self.assert_low(port)
-        port30 = io_port.DigitalPort(30)
+        port30 = io_port.DigitalPort(30, pi_obj=test_pi[0])
         port30.set_low()
         port30.set_high()
         port30.set_low()
@@ -181,7 +175,8 @@ class IPPortTestCase(unittest.TestCase):
         if not is_pi_gpio_d_available():
             add_test_to_skip_list()
             return
-        port = io_port.DigitalPort(4)
+
+        port = io_port.DigitalPort(4, pi_obj=test_pi[0])
         port.set_high()
         self.assert_high(port)
         port.toggle()
@@ -190,7 +185,7 @@ class IPPortTestCase(unittest.TestCase):
         self.assert_low(port)
         port.toggle()
         self.assert_low(port)
-        port30 = io_port.DigitalPort(30)
+        port30 = io_port.DigitalPort(30, pi_obj=test_pi[0])
         port30.set_low()
         port30.set_high()
         port30.set_low()
@@ -201,7 +196,8 @@ class IPPortTestCase(unittest.TestCase):
             add_test_to_skip_list()
             return
 
-        port = io_port.DigitalPort(9, io_port.PORT_IS_READ_ONLY)
+        port = io_port.DigitalPort(9, io_port.PORT_IS_READ_ONLY,
+                                   pi_obj=test_pi[0])
         self.assert_low(port)
         try:
             port.set_low()
@@ -226,8 +222,7 @@ class IPPortTestCase(unittest.TestCase):
             add_test_to_skip_list()
             return
 
-        my_pi = pigpio.pi('pi222', show_errors=True)
-        port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, my_pi)
+        port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, pi_obj=test_pi[0])
         port.upper_limit = 75
         port.lower_limit = 70
         self.assertGreater(port.get_value(), -20)
@@ -239,18 +234,18 @@ class IPPortTestCase(unittest.TestCase):
             add_test_to_skip_list()
             return
 
-        my_pi = pigpio.pi('pi222', show_errors=True)
-        port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, my_pi)
+        port = io_port.AnalogPort(2, "Temperature Port", io_port.do_nothing, pi_obj=test_pi[0])
         # a valid file sensor data file must be in that directory on the pi
         # access must be granted by in opt/pigpio/access
         # /home/pi/sauna/w1_slave/*.txt r
-        # to have the 1wire file on the mac for testing is therfore not doable
+        # to have the 1wire file on the mac for testing is therefore not doable
         sensor_data_file_path = "/home/pi/sauna/w1_slave/*.txt"
         values = port.get_values_2(sensor_data_file_path)
         self.assertAlmostEqual(23.187, values[0], places=3)
         self.assertAlmostEqual(26.297, values[1], places=3)
 
     def test_analog_gpio_test_3(self):
+        # TODO needs more test
         pass
 
 
@@ -265,7 +260,7 @@ def create_test_suite() -> unittest.TestSuite:
     suite.addTest(IPPortTestCase('test_pig_pio_test_1'))
     suite.addTest(IPPortTestCase('test_pig_pio_test_2'))
     suite.addTest(IPPortTestCase('test_pig_pio_test_3'))
-    suite.addTest(IPPortTestCase('test_pig_pio_test_0'))  # TODO needs some time to execute
+    suite.addTest(IPPortTestCase('test_pig_pio_test_0'))
     suite.addTest(IPPortTestCase('test_analog_gpio_test_1'))
     suite.addTest(IPPortTestCase('test_analog_gpio_test_2'))
     suite.addTest(IPPortTestCase('test_analog_gpio_test_3'))
@@ -283,63 +278,14 @@ def main():
     close_pi_gpio_d_check()
 
 
-def port_example():
-    pi = pigpio.pi('pi224', show_errors=True)
-    assert pi.connected
-
-    ports_id_1 = [2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 17]
-    ports_id_2 = [18, 22, 23, 24, 25, 27, 28, 29, 30, 31]
-    ports_all = ports_id_1 + ports_id_2
-
-    dps = []
-    led_ports = [18, 23, 24, 25]
-    for port_num in led_ports:
-        port = io_port.DigitalPort(port_num, pi_para=pi)
-        dps.append(port)
-
-    print("\nBlinking")
-    for i in range(0, 3):
-        for dp in dps:
-            dp.set_high()
-
-        time.sleep(0.5)
-
-        for dp in dps:
-            dp.set_low()
-
-        time.sleep(0.5)
-
-        for dp in dps:
-            dp.toggle()
-
-        time.sleep(0.5)
-
-    path = "/sys/bus/w1/devices/28-00*/w1_slave"
-    one_wire = io_port.AnalogPort(2, port_type=io_port.PORT_IS_READ_ONLY,
-                             path_to_1wire=path,pi_para=pi)
-    print("\nTemp Reading")
-    for i in range(0, 10):
-        temp = one_wire.get_value()
-        print(str(temp) + " ", end="")
-        time.sleep(0.2)
-
-    button = io_port.DigitalPort(27, port_type=io_port.PORT_IS_READ_ONLY, pi_para=pi)
-    print("\nWaiting for button press.")
-    try:
-        for i in range(0, 10):
-            if button.is_low():
-                print("Button Low ", end="")
-            if button.is_high():
-                print("Button is high", end="")
-
-            time.sleep(0.2)
-
-    except KeyboardInterrupt:
-        print("\nTidying up")
-
+# pi222 no sensor
+# pi224 with temp sensor
+test_pi_address = ["pi222", "pi224"]
+test_pi = []
 
 if __name__ == '__main__':
     determine_hardware_and_os_environment()
-    #main()
-
-    port_example()
+    print(test_pi_address)
+    test_pi.append(pigpio.pi(test_pi_address[0], show_errors=True))
+    test_pi.append(pigpio.pi(test_pi_address[1], show_errors=True))
+    main()

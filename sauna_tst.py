@@ -9,7 +9,7 @@ class SaunaTestCase(unittest.TestCase):
     """This class contains the sauna test cases."""
 
     def setUp(self):
-        self.sauna = sauna.Sauna()
+        self.sauna = sauna.Sauna("pi222")
         self.login = sauna.Login()
 
     def test_sauna_1(self):
@@ -18,8 +18,7 @@ class SaunaTestCase(unittest.TestCase):
         self.assertEqual("0", self.sauna.get_sensor_value("Power Sensor"))
         self.assertEqual("0", self.sauna.get_sensor_value("Light Sensor"))
         self.assertEqual("0", self.sauna.get_sensor_value("Oven Sensor"))
-        self.assertEqual("0", self.sauna.get_sensor_value("Temperature Sensor"))
-        self.assertEqual("24.742", self.sauna.get_sensor_value("Temperature Sensor 2"))
+        self.assertEqual("75", self.sauna.get_sensor_value("Temperature Sensor"))
 
         self.assertEqual("0", self.sauna.get_sensor_value("Power Switch"))
         self.assertEqual("0", self.sauna.get_sensor_value("Light Switch"))
